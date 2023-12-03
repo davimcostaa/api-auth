@@ -8,6 +8,9 @@
     "lint": "jshint .",
     "lint:fix": "jshint . --fix"
   },
+  "engines": {
+    "node": "18.x"
+  },
   "author": "Davi Costa",
   "license": "ISC",
   "dependencies": {

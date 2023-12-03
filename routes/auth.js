@@ -7,21 +7,16 @@ const { registerValidation, loginValidation } = require('../validation/validatio
 router.post('/register', async (req, res) => {
     // validação antes de enviar
     const { error } = registerValidation(req.body);
-    if(error) return res.status(400).send({"messagem": error.details[0].message});
+    if (error) return res.status(400).send({"messagem": error.details[0].message});
 
     // checar e-mail enviado
     const emailExist = await User.findOne({email: req.body.email});
-    if (emailExist) return res.status(400).send({"mensagem": "E-mail já existente"})
-
-    // gerar token
-    const token = jwt.sign({ _id: req._id }, process.env.TOKEN_SECRET, {
-        expiresIn: '30m'  
-    });
+    if (emailExist) return res.status(400).send({"mensagem": "E-mail já existente"});
 
     // Hash senha
     const salt = await bcrypt.genSalt(10);
     const hashSenha = await bcrypt.hash(req.body.senha, salt);
-    
+
     const user = new User({
         nome: req.body.nome,
         email: req.body.email,
@@ -29,23 +24,33 @@ router.post('/register', async (req, res) => {
         telefones: req.body.telefones,
         data_atualizacao: '',
         ultimo_login: '',
-        token: token
+        token: ''
     });
+
     try {
         const savedUser = await user.save();
+
+        // gerar token 
+        const token = jwt.sign({ _id: savedUser._id }, process.env.TOKEN_SECRET, {
+            expiresIn: '30m'
+        });
+
+        savedUser.token = token;
+        await savedUser.save();
+
         const responseUser = {
             _id: savedUser._id,
             data_criacao: savedUser.data_criacao,
             data_atualizacao: savedUser.data_atualizacao,
             ultimo_login: savedUser.ultimo_login,
-            token: savedUser.token
+            token: token
         };
         res.send(responseUser);
     } catch (error) {
-        res.status(400).send(error)
+        res.status(400).send(error);
     }
-
 });
+
 
 router.post('/login', async (req, res) => {
 
